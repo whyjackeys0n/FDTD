@@ -17,7 +17,7 @@ Hz = np.zeros(jmax)
 Ex_prev = np.zeros(jmax)
 Hz_prev = np.zeros(jmax)
 
-lambda_min = 35e-9
+lambda_min = 350e-9  # meters
 dx = lambda_min / 20
 dt = dx / c0
 
@@ -36,22 +36,27 @@ fig = plt.figure()
 ims = []
 for n in range(nmax):
     # Update magnetic field boundaries
-
+    Hz[jmax-1] = Hz_prev[jmax-2]
+    # Update magnetic field
     for j in range(jmax - 1):
         Hz[j] = Hz_prev[j] + dt / (dx * mu0) * (Ex[j + 1] - Ex[j])
         Hz_prev[j] = Hz[j]
 
+    # Update electric field boundaries
+    Ex[0] = Ex_prev[1]
+    # Update electric field
     for j in range(1, jmax):
         Ex[j] = Ex_prev[j] + dt / (dx * eps) * (Hz[j] - Hz[j - 1])
         Ex_prev[j] = Ex[j]
-
+    # Electric field source
     Ex[jsource] += source_function(n + 1)
     Ex_prev[jsource] = Ex[jsource]
 
     if n % 10 == 0:
-        im = plt.plot(Ex)
+        im = plt.plot(Ex, "navy")
         # plt.ylim([-1, 1])
         ims.append(im)
+
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save("test.gif", writer='pillow')
-plt.show()
+ani.save("tau30source250.gif", writer='pillow')
+

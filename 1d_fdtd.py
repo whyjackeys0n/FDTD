@@ -9,7 +9,7 @@ c0 = 1 / np.sqrt(eps0 * mu0)
 imp0 = np.sqrt(mu0 / eps0)
 
 jmax = 500
-jsource = 250
+jsource = 10
 nmax = 2000
 
 Ex = np.zeros(jmax)
@@ -21,7 +21,10 @@ lambda_min = 350e-9  # meters
 dx = lambda_min / 20
 dt = dx / c0
 
-eps = eps0
+eps = np.ones(jmax) * eps0
+eps[250:300] = 10 * eps0
+
+material_prof = eps > eps0
 
 
 def source_function(t):
@@ -36,17 +39,20 @@ fig = plt.figure()
 ims = []
 for n in range(nmax):
     # Update magnetic field boundaries
-    Hz[jmax-1] = Hz_prev[jmax-2]
+    Hz[jmax - 1] = Hz_prev[jmax - 2]
     # Update magnetic field
     for j in range(jmax - 1):
         Hz[j] = Hz_prev[j] + dt / (dx * mu0) * (Ex[j + 1] - Ex[j])
         Hz_prev[j] = Hz[j]
+    # Magnetic field source
+    Hz[jsource - 1] -= source_function(n) / imp0
+    Hz_prev[jsource - 1] = Hz[jsource - 1]
 
     # Update electric field boundaries
     Ex[0] = Ex_prev[1]
     # Update electric field
     for j in range(1, jmax):
-        Ex[j] = Ex_prev[j] + dt / (dx * eps) * (Hz[j] - Hz[j - 1])
+        Ex[j] = Ex_prev[j] + dt / (dx * eps[j]) * (Hz[j] - Hz[j - 1])
         Ex_prev[j] = Ex[j]
     # Electric field source
     Ex[jsource] += source_function(n + 1)
@@ -54,9 +60,9 @@ for n in range(nmax):
 
     if n % 10 == 0:
         im = plt.plot(Ex, "navy")
-        # plt.ylim([-1, 1])
+        plt.plot(material_prof)
+        plt.ylim([-1, 1])
         ims.append(im)
 
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
 ani.save("tau30source250.gif", writer='pillow')
-
